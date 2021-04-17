@@ -47,7 +47,7 @@ def glossToVideo():
 
 
 @app.route('/text_to_isl', methods=['GET'])
-def glossToVideo():
+def getISLFromText():
     text = str(request.args['query'])
     return text
 
