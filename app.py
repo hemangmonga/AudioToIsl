@@ -49,7 +49,9 @@ def glossToVideo():
 @app.route('/text_to_isl', methods=['GET'])
 def getISLFromText():
     text = str(request.args['query'])
-    return text
+    isl_gloss_list, links = util.getISL(text)
+    isl_gloss = ' '.join(isl_gloss_list)
+    return isl_gloss + '<br><br><br>' + ', '.join(links)
 
 
 if __name__ == "__main__":
