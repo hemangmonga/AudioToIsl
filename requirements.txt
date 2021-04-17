@@ -10,3 +10,4 @@ six==1.15.0
 SpeechRecognition==3.8.1
 tqdm==4.60.0
 Werkzeug==1.0.1
+gunicorn
