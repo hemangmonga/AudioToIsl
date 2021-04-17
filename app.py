@@ -46,10 +46,10 @@ def glossToVideo():
     return jsonify(message)
 
 
-@app.route('/text_to_isl', methods=['GET', 'POST'])
+@app.route('/text_to_isl', methods=['GET'])
 def glossToVideo():
-    text = request.args['query']
-    print(text)
+    text = str(request.args['query'])
+    return text
 
 
 if __name__ == "__main__":
