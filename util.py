@@ -34,7 +34,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 # os.environ['STANFORD_MODELS'] = os.path.join(BASE_DIR,
 #                                              'stanford-parser-full-2018-10-17/edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz')
 # os.environ['NLTK_DATA'] = '/usr/local/share/nltk_data/'
-# os.environ['JAVAHOME'] = 'C:\\Program Files\\Java\\jdk1.8.0_221\\bin\\java.exe'
+os.environ['JAVAHOME'] = 'C:\\Program Files\\Java\\jdk1.8.0_221\\bin\\java.exe'
 # print(os.environ.get('CLASSPATH'))
 
 with open("data_dict.pickle", "rb") as input_file:
@@ -42,62 +42,6 @@ with open("data_dict.pickle", "rb") as input_file:
 
 with open("parser.pickle", "rb") as input_file:
     parser = cPickle.load(input_file)
-
-
-# def is_parser_jar_file_present():
-#     stanford_parser_zip_file_path = os.environ.get('CLASSPATH') + ".jar"
-#     return os.path.exists(stanford_parser_zip_file_path)
-#
-#
-# def extract_models_jar_file():
-#     stanford_models_zip_file_path = os.path.join(os.environ.get('CLASSPATH'), 'stanford-parser-3.9.2-models.jar')
-#     stanford_models_dir = os.environ.get('CLASSPATH')
-#     with zipfile.ZipFile(stanford_models_zip_file_path) as z:
-#         z.extractall(path=stanford_models_dir)
-#
-#
-# def reporthook(count, block_size, total_size):
-#     global start_time
-#     if count == 0:
-#         start_time = time.time()
-#         return
-#     duration = time.time() - start_time
-#     progress_size = int(count * block_size)
-#     speed = int(progress_size / (1024 * duration))
-#     percent = min(int(count * block_size * 100 / total_size), 100)
-#     sys.stdout.write("\r...%d%%, %d MB, %d KB/s, %d seconds passed" %
-#                      (percent, progress_size / (1024 * 1024), speed, duration))
-#     sys.stdout.flush()
-#
-#
-# def download_parser_jar_file():
-#     stanford_parser_zip_file_path = os.environ.get('CLASSPATH') + ".jar"
-#     url = "https://nlp.stanford.edu/software/stanford-parser-full-2018-10-17.zip"
-#     urllib.request.urlretrieve(url, stanford_parser_zip_file_path, reporthook)
-#
-#
-# def extract_parser_jar_file():
-#     stanford_parser_zip_file_path = os.environ.get('CLASSPATH') + ".jar"
-#     try:
-#         with zipfile.ZipFile(stanford_parser_zip_file_path) as z:
-#             z.extractall(path=BASE_DIR)
-#     except Exception:
-#         os.remove(stanford_parser_zip_file_path)
-#         download_parser_jar_file()
-#         extract_parser_jar_file()
-#
-#
-# def download_required_packages():
-#     if not os.path.exists(os.environ.get('CLASSPATH')):
-#         if is_parser_jar_file_present():
-#             pass
-#         else:
-#             download_parser_jar_file()
-#         extract_parser_jar_file()
-#
-#     if not os.path.exists(os.environ.get('STANFORD_MODELS')):
-#         extract_models_jar_file()
-
 
 lemmatizer = WordNetLemmatizer()
 
@@ -169,12 +113,48 @@ def modify_tree_structure(parent_tree):
     return modified_parse_tree
 
 
+# def remove_stop_words(sentence):
+#     stop_words = set(stopwords.words('english'))
+#     word_tokens = word_tokenize(sentence)
+#     filtered_sentence = [w for w in word_tokens if not w in stop_words]
+#     filtered_sentence = ' '.join(filtered_sentence)
+#     return filtered_sentence
+
 def remove_stop_words(sentence):
-    stop_words = set(stopwords.words('english'))
-    word_tokens = word_tokenize(sentence)
-    filtered_sentence = [w for w in word_tokens if not w in stop_words]
-    filtered_sentence = ' '.join(filtered_sentence)
-    return filtered_sentence
+    sentence = sentence.lower()
+    pos_tagged = nltk.pos_tag(nltk.word_tokenize(sentence))
+
+    print(pos_tagged)
+
+    remove_tags = ['TO', 'POS', 'MD', 'FW', 'CC', 'JJR', 'JJS', 'UH', 'RP', 'SYM', 'IN']
+
+    lemmatized_sentence = []
+    for word, tag in pos_tagged:
+        if word in ['a', 'an', 'the', 'is']:
+            pass
+        else:
+            if tag in remove_tags:
+                pass
+            else:
+                lemmatized_sentence.append(word)
+                # lemmatized_sentence.append(lemmatizer.lemmatize(word, tag))
+
+    pos_tagged = nltk.pos_tag(nltk.word_tokenize(" ".join(lemmatized_sentence)))
+
+    wordnet_tagged = list(map(lambda x: (x[0], pos_tagger(x[1])), pos_tagged))
+    print(wordnet_tagged)
+    lemmatized_sentence1 = []
+    for word, tag in wordnet_tagged:
+        if tag is None:
+            # if there is no available tag, append the token as is
+            lemmatized_sentence1.append(word)
+        else:
+            # else use the tag to lemmatize the token
+            lemmatized_sentence1.append(lemmatizer.lemmatize(word, tag))
+
+    lemmatized_sentence = " ".join(lemmatized_sentence1)
+
+    return lemmatized_sentence
 
 
 def convert_eng_to_isl(input_string):
@@ -214,50 +194,66 @@ def convert_eng_to_isl(input_string):
 
 # l = convert_eng_to_isl('As an accountant i want to make a payment')
 
-def check_word(word):
-    temp_list = []
-    for i in data_dict.keys():
-        if word in i:
-            temp_list.append(i)
-    return temp_list
+# def check_word(word):
+#     temp_list = []
+#     for i in data_dict.keys():
+#         if word in i:
+#             temp_list.append(i)
+#     return temp_list
+
+def split_word(word):
+    temp = []
+    for w in word:
+        temp.append(data_dict[w].split('/')[-1])
+    return temp
 
 
 # sentence = 'As an accountant, i want to make a payment'
 def getISL(sentence):
-    # tokenize the sentence and find the POS tag for each token
-    pos_tagged = nltk.pos_tag(nltk.word_tokenize(sentence))
-    
-    print(pos_tagged)
-    
-    # we use our own pos_tagger function to make things simpler to understand.
-    wordnet_tagged = list(map(lambda x: (x[0], pos_tagger(x[1])), pos_tagged))
-    print(wordnet_tagged)
-    
-    lemmatized_sentence = []
-    for word, tag in wordnet_tagged:
-        if tag is None:
-            # if there is no available tag, append the token as is
-            lemmatized_sentence.append(word)
-        else:
-            # else use the tag to lemmatize the token
-            lemmatized_sentence.append(lemmatizer.lemmatize(word, tag))
-    lemmatized_sentence = " ".join(lemmatized_sentence)
-    
-    print(lemmatized_sentence)
+    # # tokenize the sentence and find the POS tag for each token
+    # pos_tagged = nltk.pos_tag(nltk.word_tokenize(sentence))
+    #
+    # print(pos_tagged)
+    #
+    # # we use our own pos_tagger function to make things simpler to understand.
+    # wordnet_tagged = list(map(lambda x: (x[0], pos_tagger(x[1])), pos_tagged))
+    # print(wordnet_tagged)
+    #
+    # lemmatized_sentence = []
+    # for word, tag in wordnet_tagged:
+    #     if tag is None:
+    #         # if there is no available tag, append the token as is
+    #         lemmatized_sentence.append(word)
+    #     else:
+    #         # else use the tag to lemmatize the token
+    #         lemmatized_sentence.append(lemmatizer.lemmatize(word, tag))
+    # lemmatized_sentence = " ".join(lemmatized_sentence)
 
-    filtered_sentence = remove_stop_words(lemmatized_sentence)
+    # print(lemmatized_sentence)
+
+    filtered_sentence = remove_stop_words(sentence)
 
     l = convert_eng_to_isl(filtered_sentence)
-    
+
     links = []
     for i in l:
         if i in data_dict.keys():
             print(i, data_dict[i])
             links.append(data_dict[i].split('/')[-1])
         else:
-            print(check_word(i))
+            links = links + split_word(i)
+
+    # links = []
+    # for i in l:
+    #     if i in data_dict.keys():
+    #         print(i, data_dict[i])
+    #         links.append(data_dict[i].split('/')[-1])
+    #     else:
+    #         print(check_word(i))
 
     return l, links
 
+#
 # if __name__ == '__main__':
-#     convert_eng_to_isl('As an accountant i want to make a payment')
+#     para = 'Poor Cinderella had to work hard all day long so the others could rest'
+#     getISL(para)
